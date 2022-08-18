@@ -1,18 +1,26 @@
-import { SessionProvider, useSession } from "next-auth/react"
+import { SessionProvider, signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/router";
-import React, { useEffect, useLayoutEffect } from "react";
+import React, { useEffect } from "react";
 import { QueryClientProvider, QueryClient, Hydrate } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 import "../styles/index.css"
 
-export default function App({ Component, pageProps: { session, ...pageProps } }) {
+export default function App({ Component, pageProps }) {
     const queryClient = React.useRef(new QueryClient())
 
     return (
         <QueryClientProvider client={queryClient.current}>
             <Hydrate state={pageProps.dehydratedState}>
-                <Component {...pageProps} />
+                <SessionProvider session={pageProps.session}>
+                    {
+                        Component.auth ?
+                            (<Protected>
+                                <Component {...pageProps} />
+                            </Protected>)
+                            : (<Component {...pageProps} />)
+                    }
+                </SessionProvider>
                 <ReactQueryDevtools />
             </Hydrate>
         </QueryClientProvider>
@@ -44,12 +52,15 @@ function SendToLogin() {
 
 function Protected({ children }) {
     const { data, status } = useSession();
-    // if (status === "loading") {
-    //     return "loading"
-    // }
-    // if (!data) {
-    //     return <SendToLogin />
-    // }
-
-    return children;
+    if (status === "loading") {
+        return <div>Loading...</div>
+    }
+    if (status === "unauthenticated") {
+        return (
+            <div>
+                You are not logged in! from _app.jsx <br />
+                <button onClick={() => signIn()}>Sign in</button>
+            </div>
+        );
+    } else return children;
 }

@@ -1,19 +1,29 @@
-import { useSession } from "next-auth/react"
-import {useRouter} from "next/router"
+import { signIn, signOut, useSession } from "next-auth/react";
 
 
-export default function Protected({children}) {
-  const router = useRouter();
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.replace('/login')
-  },
-})
+function Protected() {
+
+  const { data, status } = useSession();
 
   if (status === "loading") {
-    return "Loading or not authenticated..."
+    return <div>Loading...</div>;
+  }
+  if (data?.user) {
+    return (
+      <div>
+        Hello, {data.user.email ?? data.user.name} <br />
+        <button onClick={() => signOut()}>Sign out</button>
+      </div>
+    );
+  } else {
+    return (
+      <div>
+        You are not logged in! <br />
+        <button onClick={() => signIn()}>Sign in</button>
+      </div>
+    );
+  }
 }
 
-return children
-}
+Protected.auth = true;
+export default Protected;
