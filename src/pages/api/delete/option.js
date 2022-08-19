@@ -10,6 +10,7 @@ export default async (req, res) => {
         res.end();
       }
 
+      // check if user is the owner
       const user = await prisma.user.findUnique({
         where: { email: session.user.email },
       });
@@ -20,8 +21,7 @@ export default async (req, res) => {
           id,
         },
       });
-
-      if (PollToBeDeleted.ownerId !== user.id) {
+      if (PollToBeDeleted.userId !== user.id) {
         res.statusCode = 403;
         res.end(`Hold on, you are not authorized to delete`);
         return;
@@ -29,13 +29,13 @@ export default async (req, res) => {
 
       await prisma.option.deleteMany({
         where: {
-          pollId: id,
+          pollId: { equals: req.body.id },
         },
       });
 
       await prisma.poll.delete({
         where: {
-          id,
+          id: req.body.id,
         },
       });
 

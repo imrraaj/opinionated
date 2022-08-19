@@ -1,119 +1,121 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import { useSession } from "next-auth/react";
+import React from "react";
 import { useForm, useFieldArray } from "react-hook-form";
-import { addPoll, deletePoll, getPolls, upVote, downVote } from "../utils/ApiConnection"
+import Navbar from "../components/Navbar";
+import {
+  addPoll,
+  getPolls,
+  upVote,
+  downVote,
+} from "../utils/ApiConnection";
 
+function App() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
 
-export default function App() {
+  const { data, error, isError, isLoading } = useQuery(["Polls"], getPolls);
 
-    const queryClient = useQueryClient();
-
-    const { data, error, isError, isLoading } = useQuery(['Polls'], getPolls);
-
-
-    const { control, register, handleSubmit } = useForm();
-    const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
-        control,
-        name: "options",
+  const { control, register, handleSubmit } = useForm();
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "options",
+  });
+  const onSubmit = (data) => {
+    addMutation.mutate({
+      data,
     });
-    const onSubmit = data => {
-        console.log(data);
-        addMutation.mutate({
-            data
-        });
-    };
+  };
 
+  const addMutation = useMutation(addPoll, {
+    onSuccess: () => {
+      queryClient.invalidateQueries("Polls");
+    },
+  });
 
-    const addMutation = useMutation(addPoll, {
-        onSuccess: () => {
-            queryClient.invalidateQueries('Polls');
-        }
-    });
-    const deleteMutation = useMutation(deletePoll, {
-        onSuccess: () => {
-            queryClient.invalidateQueries('Polls');
-        }
-    });
-    const upVoteMutation = useMutation(upVote, {
-        onSuccess: () => {
-            queryClient.invalidateQueries('Polls');
-        }
-    });
-    const downVoteMutation = useMutation(downVote, {
-        onSuccess: () => {
-            queryClient.invalidateQueries('Polls');
-        }
-    });
+  const upVoteMutation = useMutation(upVote, {
+    onSuccess: () => {
+      queryClient.invalidateQueries("Polls");
+    },
+  });
+  const downVoteMutation = useMutation(downVote, {
+    onSuccess: () => {
+      queryClient.invalidateQueries("Polls");
+    },
+  });
 
-    // const handleSubmit = (e) => {
-    //     e.preventDefault();
-    //     addMutation.mutate({
-    //         "question": "Sent from Client App?",
-    //         "options": ["Yes", "NO"]
-    //     });
-    //     // deleteMutation.mutate({
-    //     //     "id": "cl6uxl6a30587icb6ar71jvn5"
-    //     // })
-    // }
+  if (isError) {
+    console.log(error);
+    return <h1>Error... {error.message}</h1>;
+  }
+  if (isLoading) return <h1>Loading...</h1>;
 
+  return (
+    <>
+      <Navbar user={session.user} />
 
-    if (isError) {
-        console.log(error);
-        return <h1>Error... {error.message}</h1>
-    }
-    if (isLoading) return <h1>Loading...</h1>
-
-    return (
-        <main>
-            {/* <form onSubmit={handleSubmit((e) => {
-                console.log(e)
-            })}>
-                <input defaultValue="How was your day?" {...register("question")} />
-                <input {...register("option1", { required: true })} />
-                {errors.exampleRequired && <span>This field is required</span>}
-
-                <input type="submit" />
-            </form> */}
-
-            <h1 className="mt-4 text-red-500">Form</h1>
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <input type="text" name="question" {...register("question", { required: true })} className="block w-32 bg-red-300" />
-                {fields.map((field, index) => (
-                    <input
-                        key={field.id}
-                        {...register(`options.${index}.value`)}
-                    />
-                ))}
-                <button
-                    type="button"
-                    onClick={() => append({ option_text: "" })}
-                    className="bg-teal-200 px-4 py-2 rounded-md mx-4"
-                >
-                    append
-                </button>
-                <input type="submit" className="bg-emerald-200 px-4 py-2 rounded-md" />
-            </form>
-            {data.map(d => <div key={d.id} className={"p-4 w-fit border border-blue-100"}>
-                <>
-                    <h1>{d.question}</h1>
-                    <button className="bg-red-900 px-5 py-2 text-white" onClick={() => {
-                        deleteMutation.mutate({ id: d.id })
-                    }}>DELETE</button>
-                    {
-                        d.options?.map(o => <label className="block" key={o.id}>
-                            <input type="checkbox" key={o.id} onChange={(e) => {
-                                if (e.target.checked) {
-                                    upVoteMutation.mutate({ qid: d.id, aid: o.id })
-                                } else {
-                                    downVoteMutation.mutate({ qid: d.id, aid: o.id })
-                                }
-                            }} />
-                            {o.option_text} with VOTES {o.vote_count}
-                        </label>)
-                    }
-                </>
+      <div className="mx-auto grid w-3/4  py-4">
+        <h1 className="text-3xl font-bold">Create Your Poll</h1>
+        <div className="my-4">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="my-2">
+              <label htmlFor="question" className="my-2 block">
+                Question:{" "}
+              </label>
+              <input
+                type="text"
+                name="question"
+                id="question"
+                {...register("question", { required: true })}
+                className="block w-3/4 bg-slate-600"
+              />
             </div>
-            )}
-        </main>
-    )
+            {fields.map((field, index) => (
+              <div key={field.id} className="my-2">
+                <label
+                  htmlFor={`options.${index}.value`}
+                  className="block pr-4"
+                >
+                  Option {index + 1}:
+                </label>
+                <input
+                  type="text"
+                  name={`options.${index}.value`}
+                  id={`options.${index}.value`}
+                  className="w-3/6 bg-slate-600"
+                  {...register(`options.${index}.value`)}
+                />
+
+                <button
+                  onClick={() => remove(index)}
+                  className="mx-4 rounded-md bg-rose-500 py-1 px-4 font-bold text-slate-800"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+
+            <div className="my-8">
+              <button
+                type="button"
+                onClick={() => append({ option_text: "" })}
+                className="mr-4 rounded-md bg-rose-500 py-1 px-4 font-bold text-slate-800"
+              >
+                Add Option
+              </button>
+              <button
+                type="submit"
+                className="mr-4 rounded-md bg-rose-500 py-1 px-4 font-bold text-slate-800"
+              >
+                Submit
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
+  );
 }
+
+App.auth = true;
+export default App;

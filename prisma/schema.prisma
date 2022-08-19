@@ -42,6 +42,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  Vote          Vote[]
 }
 
 model VerificationToken {
@@ -56,6 +57,8 @@ model Poll {
   id       String   @id @default(cuid())
   question String
   options  Option[]
+  Vote     Vote[]
+  ownerId  String
 }
 
 model Option {
@@ -64,15 +67,17 @@ model Option {
   vote_count  Int     @default(0)
   Poll        Poll?   @relation(fields: [pollId], references: [id])
   pollId      String?
+  Vote        Vote[]
 }
 
-// model Vote {
-//   email    String @unique
-//   VotedFor String
-//   option   Option @relation(fields: [VotedFor], references: [id])
+model Vote {
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  VotedFor String
+  option   Option @relation(fields: [VotedFor], references: [id])
 
-//   pollId String
-//   poll   Poll   @relation(fields: [pollId], references: [id])
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id])
 
-//   @@id([email, VotedFor, pollId])
-// }
+  @@id([userId, VotedFor, pollId])
+}

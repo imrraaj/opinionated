@@ -12,7 +12,7 @@ export const addPoll = async (data) => {
   return await api.post("/addPoll", data);
 };
 export const deletePoll = async (data) => {
-  return await api.post("/deletePoll", data);
+  return await api.delete(`/delete/${data.id}`);
 };
 
 export const upVote = async (data) => {
